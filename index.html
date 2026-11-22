@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Passerelle</title>
+<style>
+  :root {
+    --bg: #f5f5f2; --card: #fff; --ink: #16181d; --muted: #6b6f78; --line: #e3e3de;
+    --accent: #2f6df6; --accent-ink: #fff; --ok: #1f9d55; --danger: #d64545; --drop: #e8efff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --card: #181b21; --ink: #eceef2; --muted: #9096a1; --line: #2a2e37;
+      --accent: #5b8cff; --drop: #1b2540; --ok: #3ccf7f; --danger: #ff6b6b; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .dot.off { background: var(--danger); }
+
+  .drop { display: block; position: relative; border: 2px dashed var(--line); border-radius: 16px; background: var(--card);
+    padding: 28px 16px; text-align: center; transition: background .15s, border-color .15s; cursor: pointer; }
+  .drop.over { background: var(--drop); border-color: var(--accent); }
+  .drop strong { display: block; font-size: 18px; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 14px; }
+  .btn { appearance: none; border: 0; border-radius: 10px; padding: 10px 14px; font: inherit; font-weight: 600;
+    cursor: pointer; background: var(--line); color: var(--ink); text-decoration: none; display: inline-flex;
+    align-items: center; gap: 6px; min-height: 44px; white-space: nowrap; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.danger { background: transparent; color: var(--danger); }
+  .btn.danger.strong { background: var(--danger); color: #fff; }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .big { width: 100%; justify-content: center; font-size: 17px; padding: 14px; margin-top: 14px; }
+
+  .pair { display: none; gap: 16px; align-items: center; background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+  .pair.show { display: flex; }
+  .qr { background: #fff; border-radius: 10px; padding: 6px; line-height: 0; flex: none; }
+  .qr svg { width: 132px; height: 132px; }
+  .pair p { margin: 0 0 6px; }
+  .pair code { font-size: 13px; word-break: break-all; color: var(--muted); }
+  .pair select { font: inherit; font-size: 13px; margin-top: 8px; padding: 4px; border-radius: 6px;
+    background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+
+  .progress { margin-top: 12px; display: grid; gap: 8px; }
+  .up { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  .bar { height: 4px; background: var(--line); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .1s; }
+
+  .listhead { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 8px; }
+  .listhead h2 { font-size: 15px; margin: 0; color: var(--muted); font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  li { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px;
+    display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; }
+  li.new { animation: flash 1.2s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 3px var(--accent); } to { box-shadow: 0 0 0 0 transparent; } }
+  .thumb { width: 48px; height: 48px; border-radius: 10px; background: var(--bg); display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; color: var(--muted); overflow: hidden; text-transform: uppercase; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .name { font-weight: 600; overflow-wrap: anywhere; }
+  .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; background: var(--bg); margin-right: 4px; }
+  .tag.done { color: var(--ok); }
+  .actions { display: flex; gap: 4px; }
+  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
+  @media (max-width: 520px) {
+    li { grid-template-columns: 44px 1fr; }
+    .thumb { width: 44px; height: 44px; }
+    .actions { grid-column: 1 / -1; }
+    .actions .btn { flex: 1; justify-content: center; }
+    .pair { flex-direction: column; text-align: center; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Passerelle</h1>
+    <div class="status" role="status"><span class="dot" id="dot"></span><span id="statusText">connecté</span></div>
+  </header>
+
+  <section class="pair" id="pair" aria-label="Connecter le téléphone">
+    <div class="qr" id="qr"></div>
+    <div>
+      <p><strong>Scanne avec ton téléphone</strong></p>
+      <p class="sub">Même Wi-Fi que le PC. Ajoute ensuite la page à l'écran d'accueil pour l'avoir sous la main.</p>
+      <code id="pairUrl"></code><br>
+      <select id="ifaceSel" aria-label="Réseau utilisé"></select>
+      <button class="btn" id="openFolder" style="margin-top:8px">Ouvrir le dossier</button>
+    </div>
+  </section>
+
+  <label class="drop" id="drop">
+    <strong id="dropTitle">Glisse tes fichiers ici</strong>
+    <span id="dropSub">ou clique pour choisir — ils apparaîtront sur l'autre appareil</span>
+    <input type="file" id="picker" multiple class="sr">
+  </label>
+  <div class="progress" id="progress" aria-live="polite"></div>
+
+  <div class="listhead">
+    <h2 id="count">Fichiers</h2>
+    <button class="btn danger" id="clearAll" hidden>Tout supprimer</button>
+  </div>
+  <ul id="list"></ul>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const isTouch = matchMedia('(pointer: coarse)').matches;
+const downloadedHere = new Set(JSON.parse(safeGet('dl') || '[]'));
+let known = null;
+
+function safeGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+
+if (isTouch) {
+  $('#dropTitle').textContent = 'Envoyer des fichiers';
+  $('#dropSub').textContent = 'Photos, vidéos, documents… ils arriveront sur le PC';
+}
+
+const fmtSize = b => b < 1024 ? b + ' o' : b < 1048576 ? (b / 1024).toFixed(0) + ' Ko'
+  : b < 1073741824 ? (b / 1048576).toFixed(1) + ' Mo' : (b / 1073741824).toFixed(2) + ' Go';
+const fmtTime = t => {
+  const d = (Date.now() - t) / 1000;
+  if (d < 60) return "à l'instant";
+  if (d < 3600) return `il y a ${Math.floor(d / 60)} min`;
+  if (d < 86400) return `il y a ${Math.floor(d / 3600)} h`;
+  return new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+};
+const IMG = /\.(jpe?g|png|gif|webp)$/i;
+const enc = encodeURIComponent;
+
+// ---------- Infos / QR (sur le PC seulement)
+fetch('/api/info').then(r => r.json()).then(info => {
+  if (!info.local || !info.urls.length) return;
+  $('#pair').classList.add('show');
+  const sel = $('#ifaceSel');
+  info.urls.forEach((u, i) => sel.add(new Option(`${u.name} — ${u.ip}`, i)));
+  if (info.urls.length < 2) sel.hidden = true;
+  const show = i => {
+    const u = info.urls[i].url;
+    $('#pairUrl').textContent = u;
+    if (window.qrcode) {
+      const q = qrcode(0, 'M'); q.addData(u); q.make();
+      $('#qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    } else $('#qr').hidden = true;
+  };
+  sel.onchange = () => show(sel.value);
+  show(0);
+  $('#openFolder').onclick = () => fetch('/api/open-folder', { method: 'POST' });
+});
+
+// ---------- Liste
+async function refresh() {
+  const files = await fetch('/api/files').then(r => r.json());
+  const prev = known; known = new Set(files.map(f => f.name));
+  $('#count').textContent = files.length ? `${files.length} fichier${files.length > 1 ? 's' : ''}` : 'Fichiers';
+  $('#clearAll').hidden = files.length < 2;
+  const ul = $('#list');
+  if (!files.length) { ul.innerHTML = '<li class="empty" style="display:block">Rien pour l\'instant.</li>'; return; }
+  ul.replaceChildren(...files.map(f => row(f, prev && !prev.has(f.name))));
+}
+
+function row(f, isNew) {
+  const li = document.createElement('li');
+  if (isNew) li.className = 'new';
+  const ext = (f.name.split('.').pop() || '').slice(0, 4);
+  const thumb = IMG.test(f.name)
+    ? `<img loading="lazy" alt="" src="/api/dl/${enc(f.name)}?voir&t=${f.time}">` : (f.name.includes('.') ? ext : '?');
+  const mine = downloadedHere.has(f.name + f.time);
+  const from = f.from === 'tel' ? 'depuis le tél' : f.from === 'pc' ? 'depuis le PC' : 'autre appareil';
+  li.innerHTML = `
+    <div class="thumb">${thumb}</div>
+    <div>
+      <div class="name"></div>
+      <div class="sub"><span class="tag">${from}</span>${mine ? '<span class="tag done">téléchargé ✓</span>' : ''}${fmtSize(f.size)} · ${fmtTime(f.time)}</div>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="/api/dl/${enc(f.name)}" download>Télécharger</a>
+      <button class="btn danger${mine ? ' strong' : ''}">Supprimer</button>
+    </div>`;
+  li.querySelector('.name').textContent = f.name;
+  li.querySelector('a').addEventListener('click', () => {
+    downloadedHere.add(f.name + f.time); safeSet('dl', JSON.stringify([...downloadedHere].slice(-200)));
+    setTimeout(refresh, 600);
+  });
+  li.querySelector('button').onclick = () => del(f.name);
+  return li;
+}
+
+async function del(name) {
+  await fetch('/api/files/' + enc(name), { method: 'DELETE' });
+  refresh();
+}
+$('#clearAll').onclick = async () => {
+  if (!confirm('Supprimer tous les fichiers partagés ?')) return;
+  for (const n of known) await fetch('/api/files/' + enc(n), { method: 'DELETE' });
+  refresh();
+};
+
+// ---------- Envoi
+function upload(file) {
+  return new Promise(resolve => {
+    const box = document.createElement('div');
+    box.className = 'up';
+    box.innerHTML = '<div></div><div class="bar"><i></i></div>';
+    box.firstChild.textContent = file.name;
+    $('#progress').append(box);
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', '/api/upload?name=' + enc(file.name));
+    xhr.upload.onprogress = e => { if (e.lengthComputable) box.querySelector('i').style.width = (e.loaded / e.total * 100) + '%'; };
+    xhr.onloadend = () => {
+      if (xhr.status === 200) box.remove();
+      else { box.firstChild.textContent = '⚠ Échec : ' + file.name; setTimeout(() => box.remove(), 5000); }
+      resolve();
+    };
+    xhr.send(file);
+  });
+}
+async function sendFiles(list) { for (const f of list) await upload(f); refresh(); }
+
+$('#picker').onchange = e => { sendFiles([...e.target.files]); e.target.value = ''; };
+const drop = $('#drop');
+let depth = 0;
+addEventListener('dragenter', e => { e.preventDefault(); depth++; drop.classList.add('over'); });
+addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; drop.classList.remove('over'); } });
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => {
+  e.preventDefault(); depth = 0; drop.classList.remove('over');
+  const files = [...(e.dataTransfer?.files || [])];
+  if (files.length) sendFiles(files);
+});
+// Coller (Ctrl+V) une image ou un fichier copié
+addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.files || [])];
+  if (files.length) sendFiles(files);
+});
+
+// ---------- Temps réel
+function connect() {
+  const es = new EventSource('/api/events');
+  es.onopen = () => { $('#dot').classList.remove('off'); $('#statusText').textContent = 'connecté'; refresh(); };
+  es.onmessage = refresh;
+  es.onerror = () => { $('#dot').classList.add('off'); $('#statusText').textContent = 'PC injoignable…'; };
+}
+connect();
+setInterval(() => document.visibilityState === 'visible' && refresh(), 30000);
+</script>
+</body>
+</html>
