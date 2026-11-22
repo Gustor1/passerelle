@@ -55,6 +55,21 @@ avec l'étiquette « envoyé par Claude ».
 
 Un fichier copié directement dans `partage/` apparaît aussi en direct sur la page.
 
+### Skill Claude Code : « transfère téléphone »
+
+Le dossier [`claude-skill/transfert-telephone`](claude-skill/transfert-telephone/SKILL.md)
+contient un skill pour [Claude Code](https://claude.com/claude-code). Une fois
+installé, il suffit de dire « transfère téléphone » à Claude quand il a fini un
+rendu : il envoie le fichier dans Passerelle, ouvre la page sur le PC et te
+répond avec un lien à ouvrir sur ton téléphone.
+
+1. Copie le dossier `claude-skill/transfert-telephone` dans le dossier des skills
+   de Claude Code : `~/.claude/skills/` (sous Windows :
+   `C:\Users\<toi>\.claude\skills\`).
+2. Dans le `SKILL.md` copié, remplace `<CHEMIN_PASSERELLE>` par le chemin de ton
+   dossier Passerelle.
+3. Ouvre une nouvelle conversation Claude Code : le skill y est disponible.
+
 ## Sécurité
 
 - Le PC lui-même (localhost) a toujours accès.
