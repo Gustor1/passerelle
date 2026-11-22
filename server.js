@@ -27,6 +27,15 @@ const saveMeta = () => fs.writeFileSync(META, JSON.stringify(meta, null, 1));
 const clients = new Set();
 function notify() { for (const res of clients) res.write('data: change\n\n'); }
 
+// Un fichier copié directement dans partage/ apparaît aussi en direct
+let watchTimer;
+try {
+  fs.watch(DIR, (_evt, name) => {
+    if (name && name.startsWith('.')) return;
+    clearTimeout(watchTimer); watchTimer = setTimeout(notify, 400);
+  });
+} catch {}
+
 function addresses() {
   const out = [];
   for (const [name, list] of Object.entries(os.networkInterfaces())) {
@@ -121,7 +130,10 @@ const server = http.createServer((req, res) => {
       if (failed) return;
       fs.renameSync(tmp, path.join(DIR, name));
       const ua = req.headers['user-agent'] || '';
-      meta[name] = { from: isLocal(req) ? 'pc' : (/Mobi|Android|iPhone|iPad/i.test(ua) ? 'tel' : 'autre'), downloads: 0 };
+      const tagged = String(req.headers['x-passerelle-from'] || '');
+      const from = isLocal(req) && tagged === 'claude' ? 'claude'
+        : isLocal(req) ? 'pc' : (/Mobi|Android|iPhone|iPad/i.test(ua) ? 'tel' : 'autre');
+      meta[name] = { from, downloads: 0 };
       saveMeta(); notify();
       send(res, 200, { name });
     });

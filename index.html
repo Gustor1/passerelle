@@ -177,7 +177,7 @@ function row(f, isNew) {
   const thumb = IMG.test(f.name)
     ? `<img loading="lazy" alt="" src="/api/dl/${enc(f.name)}?voir&t=${f.time}">` : (f.name.includes('.') ? ext : '?');
   const mine = downloadedHere.has(f.name + f.time);
-  const from = f.from === 'tel' ? 'depuis le tél' : f.from === 'pc' ? 'depuis le PC' : 'autre appareil';
+  const from = { tel: 'depuis le tél', pc: 'depuis le PC', claude: 'envoyé par Claude' }[f.from] || 'autre appareil';
   li.innerHTML = `
     <div class="thumb">${thumb}</div>
     <div>

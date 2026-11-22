@@ -39,6 +39,20 @@ Les fichiers sont rangés dans le dossier `partage/` à côté de `server.js`.
 | `PORT`   | `8765`    | Port d'écoute                |
 | `HOST`   | `0.0.0.0` | Interface d'écoute           |
 
+## Envoyer depuis la ligne de commande (scripts, agents IA)
+
+```bash
+node envoyer.js chemin/vers/video.mp4 [autres fichiers...] [--json]
+```
+
+Démarre Passerelle s'il ne tourne pas, envoie les fichiers et affiche un lien de
+téléchargement direct par réseau (Wi-Fi, Tailscale…). Pratique pour qu'un agent
+comme Claude Code te passe le rendu d'une vidéo : tu ouvres le lien sur ton
+téléphone, même en 5G avec Tailscale. Les fichiers envoyés ainsi apparaissent
+avec l'étiquette « envoyé par Claude ».
+
+Un fichier copié directement dans `partage/` apparaît aussi en direct sur la page.
+
 ## Sécurité
 
 - Le PC lui-même (localhost) a toujours accès.
