@@ -38,15 +38,19 @@
   .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   .big { width: 100%; justify-content: center; font-size: 17px; padding: 14px; margin-top: 14px; }
 
-  .pair { display: none; gap: 16px; align-items: center; background: var(--card); border: 1px solid var(--line);
+  .pair { display: none; background: var(--card); border: 1px solid var(--line);
     border-radius: 16px; padding: 16px; margin-bottom: 16px; }
-  .pair.show { display: flex; }
+  .pair.show { display: block; }
+  .pairhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .pairhead p { margin: 0; }
+  .qrs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .qrcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; }
+  .qrcard.best { border-color: var(--accent); }
   .qr { background: #fff; border-radius: 10px; padding: 6px; line-height: 0; flex: none; }
-  .qr svg { width: 132px; height: 132px; }
-  .pair p { margin: 0 0 6px; }
-  .pair code { font-size: 13px; word-break: break-all; color: var(--muted); }
-  .pair select { font: inherit; font-size: 13px; margin-top: 8px; padding: 4px; border-radius: 6px;
-    background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .qr svg { width: 112px; height: 112px; }
+  .qrcard strong { display: block; }
+  .qrcard .sub { margin: 2px 0 6px; }
+  .qrcard code { font-size: 12px; word-break: break-all; color: var(--muted); }
 
   .progress { margin-top: 12px; display: grid; gap: 8px; }
   .up { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
@@ -88,14 +92,12 @@
   </header>
 
   <section class="pair" id="pair" aria-label="Connecter le téléphone">
-    <div class="qr" id="qr"></div>
-    <div>
-      <p><strong>Scanne avec ton téléphone</strong></p>
-      <p class="sub">Même Wi-Fi que le PC. Ajoute ensuite la page à l'écran d'accueil pour l'avoir sous la main.</p>
-      <code id="pairUrl"></code><br>
-      <select id="ifaceSel" aria-label="Réseau utilisé"></select>
-      <button class="btn" id="openFolder" style="margin-top:8px">Ouvrir le dossier</button>
+    <div class="pairhead">
+      <p><strong>Scanne avec ton téléphone</strong><br>
+        <span class="sub">Puis ajoute la page à l'écran d'accueil.</span></p>
+      <button class="btn" id="openFolder">Ouvrir le dossier</button>
     </div>
+    <div class="qrs" id="qrs"></div>
   </section>
 
   <label class="drop" id="drop">
@@ -143,19 +145,25 @@ const enc = encodeURIComponent;
 fetch('/api/info').then(r => r.json()).then(info => {
   if (!info.local || !info.urls.length) return;
   $('#pair').classList.add('show');
-  const sel = $('#ifaceSel');
-  info.urls.forEach((u, i) => sel.add(new Option(`${u.name} — ${u.ip}`, i)));
-  if (info.urls.length < 2) sel.hidden = true;
-  const show = i => {
-    const u = info.urls[i].url;
-    $('#pairUrl').textContent = u;
+  // Tailscale d'abord : il marche partout (Wi-Fi, 4G, 5G) tant que l'app est active sur le tél.
+  const isTs = u => /tailscale/i.test(u.name) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(u.ip);
+  const urls = [...info.urls].sort((a, b) => isTs(b) - isTs(a));
+  $('#qrs').replaceChildren(...urls.map(u => {
+    const card = document.createElement('div');
+    const ts = isTs(u);
+    card.className = 'qrcard' + (ts ? ' best' : '');
+    card.innerHTML = `<div class="qr"></div><div><strong></strong><div class="sub"></div><code></code></div>`;
+    card.querySelector('strong').textContent = ts ? 'Tailscale — partout' : `${u.name} — maison`;
+    card.querySelector('.sub').textContent = ts
+      ? 'Wi-Fi, 4G ou 5G. Tailscale doit être activé sur le téléphone.'
+      : 'Seulement si le téléphone est sur le même Wi-Fi que le PC.';
+    card.querySelector('code').textContent = u.url;
     if (window.qrcode) {
-      const q = qrcode(0, 'M'); q.addData(u); q.make();
-      $('#qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
-    } else $('#qr').hidden = true;
-  };
-  sel.onchange = () => show(sel.value);
-  show(0);
+      const q = qrcode(0, 'M'); q.addData(u.url); q.make();
+      card.querySelector('.qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    } else card.querySelector('.qr').hidden = true;
+    return card;
+  }));
   $('#openFolder').onclick = () => fetch('/api/open-folder', { method: 'POST' });
 });
 

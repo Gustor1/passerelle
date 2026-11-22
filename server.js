@@ -25,6 +25,7 @@ const saveMeta = () => fs.writeFileSync(META, JSON.stringify(meta, null, 1));
 
 // --- Notifications temps réel (SSE)
 const clients = new Set();
+let localViewers = 0; // pages Passerelle ouvertes sur ce PC
 function notify() { for (const res of clients) res.write('data: change\n\n'); }
 
 // Un fichier copié directement dans partage/ apparaît aussi en direct
@@ -63,9 +64,12 @@ function fileFromUrl(p) {
   return full.startsWith(DIR + path.sep) && fs.existsSync(full) ? { n, full } : null;
 }
 
+// « Local » = la requête vient de ce PC, que ce soit par localhost ou par
+// sa propre adresse Wi-Fi / Tailscale (ex. lien Tailscale ouvert sur le PC).
 function isLocal(req) {
-  const a = req.socket.remoteAddress || '';
-  return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
+  const a = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+  if (a === '127.0.0.1' || a === '::1') return true;
+  return Object.values(os.networkInterfaces()).flat().some(i => i && i.address === a);
 }
 function cookieToken(req) {
   const m = /(?:^|;\s*)pk=([^;]+)/.exec(req.headers.cookie || '');
@@ -95,6 +99,7 @@ const server = http.createServer((req, res) => {
   if (p === '/api/info') {
     return send(res, 200, {
       local: isLocal(req),
+      pcPageOpen: localViewers > 0,
       urls: addresses().map(a => ({ ...a, url: `http://${a.ip}:${PORT}/?k=${TOKEN}` })),
     });
   }
@@ -112,8 +117,10 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
     res.write('retry: 2000\n\n');
     clients.add(res);
+    const local = isLocal(req);
+    if (local) localViewers++;
     const ping = setInterval(() => res.write(': ping\n\n'), 25000);
-    req.on('close', () => { clearInterval(ping); clients.delete(res); });
+    req.on('close', () => { clearInterval(ping); clients.delete(res); if (local) localViewers--; });
     return;
   }
 

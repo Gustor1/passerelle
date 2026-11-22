@@ -42,8 +42,10 @@ Les fichiers sont rangés dans le dossier `partage/` à côté de `server.js`.
 ## Envoyer depuis la ligne de commande (scripts, agents IA)
 
 ```bash
-node envoyer.js chemin/vers/video.mp4 [autres fichiers...] [--json]
+node envoyer.js chemin/vers/video.mp4 [autres fichiers...] [--open] [--json]
 ```
+
+`--open` ouvre aussi la page Passerelle dans le navigateur du PC, sauf si elle y est déjà ouverte.
 
 Démarre Passerelle s'il ne tourne pas, envoie les fichiers et affiche un lien de
 téléchargement direct par réseau (Wi-Fi, Tailscale…). Pratique pour qu'un agent

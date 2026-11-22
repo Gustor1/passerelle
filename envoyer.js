@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Envoie un ou plusieurs fichiers dans Passerelle depuis la ligne de commande
 // (pratique pour un script ou un agent comme Claude Code).
-//   node envoyer.js <fichier> [autres fichiers...]
+//   node envoyer.js <fichier> [autres fichiers...] [--open] [--json]
+//   --open : ouvre aussi la page Passerelle sur le PC (si elle n'y est pas déjà ouverte)
 // Lance le serveur s'il ne tourne pas, envoie les fichiers, puis affiche
 // les liens de téléchargement directs (Wi-Fi et Tailscale).
 const http = require('http');
@@ -16,7 +17,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const files = process.argv.slice(2).filter(a => !a.startsWith('--'));
 const asJson = process.argv.includes('--json');
 if (!files.length) {
-  console.error('Usage : node envoyer.js <fichier> [autres fichiers...] [--json]');
+  console.error('Usage : node envoyer.js <fichier> [autres fichiers...] [--open] [--json]');
   process.exit(2);
 }
 
@@ -86,7 +87,21 @@ const fmtSize = b => b < 1048576 ? (b / 1024).toFixed(0) + ' Ko' : b < 107374182
     });
   }
 
-  if (asJson) { console.log(JSON.stringify({ sent, pages: nets }, null, 2)); return; }
+  // --open : affiche la page Passerelle sur le PC (sauf si elle y est déjà ouverte)
+  let pageOpened = false;
+  if (process.argv.includes('--open')) {
+    const now = await getJson(`${BASE}/api/info`).catch(() => ({}));
+    if (!now.pcPageOpen) {
+      const url = `http://localhost:${PORT}/`;
+      const child = process.platform === 'win32'
+        ? spawn('cmd.exe', ['/c', `start "" "${url}"`], { detached: true, stdio: 'ignore', windowsVerbatimArguments: true })
+        : spawn(process.platform === 'darwin' ? 'open' : 'xdg-open', [url], { detached: true, stdio: 'ignore' });
+      child.unref();
+      pageOpened = true;
+    }
+  }
+
+  if (asJson) { console.log(JSON.stringify({ sent, pages: nets, pageOpened }, null, 2)); return; }
   for (const s of sent) {
     console.log(`\n✓ ${s.name} (${fmtSize(s.size)})`);
     for (const l of s.links) console.log(`  ${l.network.padEnd(10)} ${l.url}`);
