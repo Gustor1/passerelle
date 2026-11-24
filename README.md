@@ -60,14 +60,23 @@ Un fichier copié directement dans `partage/` apparaît aussi en direct sur la p
 Le dossier [`claude-skill/transfert-telephone`](claude-skill/transfert-telephone/SKILL.md)
 contient un skill pour [Claude Code](https://claude.com/claude-code). Une fois
 installé, il suffit de dire « transfère téléphone » à Claude quand il a fini un
-rendu : il envoie le fichier dans Passerelle, ouvre la page sur le PC et te
-répond avec un lien à ouvrir sur ton téléphone.
+rendu :
+
+- **Par défaut, avec [Taildrop](https://tailscale.com/kb/1106/taildrop)** : le
+  fichier arrive tout seul sur ton téléphone (sur iPhone : app Fichiers → dossier
+  Tailscale), en Wi-Fi comme en 4G/5G. Aucun lien à ouvrir.
+- **En secours, avec Passerelle** : Claude envoie le fichier dans Passerelle,
+  ouvre la page sur le PC et te répond avec un lien à ouvrir sur ton téléphone.
+
+Installation :
 
 1. Copie le dossier `claude-skill/transfert-telephone` dans le dossier des skills
    de Claude Code : `~/.claude/skills/` (sous Windows :
    `C:\Users\<toi>\.claude\skills\`).
-2. Dans le `SKILL.md` copié, remplace `<CHEMIN_PASSERELLE>` par le chemin de ton
-   dossier Passerelle.
+2. Dans le `SKILL.md` copié, remplace :
+   - `<NOM_DU_TELEPHONE>` par le nom de ton téléphone dans Tailscale
+     (`tailscale file cp --targets` le liste) ;
+   - `<CHEMIN_PASSERELLE>` par le chemin de ton dossier Passerelle.
 3. Ouvre une nouvelle conversation Claude Code : le skill y est disponible.
 
 ## Sécurité
